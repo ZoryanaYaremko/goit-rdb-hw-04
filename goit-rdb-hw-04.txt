@@ -1,0 +1,155 @@
+-- 1. Створення бази даних
+CREATE SCHEMA IF NOT EXISTS LibraryManagement;
+use LibraryManagement;
+
+CREATE TABLE IF NOT EXISTS authors (
+    author_id INT AUTO_INCREMENT PRIMARY KEY,
+    author_name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS genres (
+    genre_id INT AUTO_INCREMENT PRIMARY KEY,
+    genre_name  VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS books (
+    book_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(50) NOT NULL,
+    publication_year YEAR,
+    author_id INT NOT NULL,
+    genre_id INT NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES authors(author_id),
+    FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100),
+    email VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS borrowed_books (
+    borrow_id INT AUTO_INCREMENT PRIMARY KEY,
+    book_id INT,
+    user_id INT,
+    borrow_date DATE,
+    return_date DATE,
+    FOREIGN KEY (book_id) REFERENCES books(book_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+use LibraryManagement;
+-- 2.1 Додавання даних до authors
+INSERT INTO authors (author_name) VALUES
+('J.K. Rowling'),
+('George Orwell'),
+('Stephen King');
+
+-- 2.2 Додавання даних до genres
+INSERT INTO genres (genre_name) VALUES
+('Fantasy'),
+('Dystopian'),
+('Horror');
+
+-- 2.3 Додавання даних до books
+INSERT INTO books (title, publication_year, author_id, genre_id) VALUES
+('Harry Potter and the Sorcerer''s Stone', 1997, 1, 1),
+('1984', 1949, 2, 2),
+('The Shining', 1977, 3, 3);
+
+-- 2.4 Додавання даних до users
+INSERT INTO users (username, email) VALUES
+('reader1', 'reader1@example.com'),
+('booklover', 'booklover@example.com'),
+('horrorfan', 'horrorfan@example.com');
+
+-- 2.5 Додавання даних до borrowed_books
+INSERT INTO borrowed_books (book_id, user_id, borrow_date, return_date) VALUES
+(1, 1, '2025-07-01', '2025-07-15'),
+(2, 2, '2025-07-02', '2025-07-16'),
+(3, 3, '2025-07-03', NULL);
+
+-- 3. JOIN-запит, який об'єднує всі таблиці
+USE hw3;
+
+SELECT *
+FROM order_details od
+INNER JOIN orders o ON od.order_id = o.id
+INNER JOIN customers c ON o.customer_id = c.id
+INNER JOIN products p ON od.product_id = p.id
+INNER JOIN categories cat ON p.category_id = cat.id
+INNER JOIN employees e ON o.employee_id = e.employee_id
+INNER JOIN shippers s ON o.shipper_id = s.id
+INNER JOIN suppliers sup ON p.supplier_id = sup.id;
+
+--  4.1. Визначення кількості отриманих рядків (з оператором COUNT)
+USE hw3;
+SELECT COUNT(*)
+FROM order_details od
+INNER JOIN orders o ON od.order_id = o.id
+INNER JOIN customers c ON o.customer_id = c.id
+INNER JOIN products p ON od.product_id = p.id
+INNER JOIN categories cat ON p.category_id = cat.id
+INNER JOIN employees e ON o.employee_id = e.employee_id
+INNER JOIN shippers s ON o.shipper_id = s.id
+INNER JOIN suppliers sup ON p.supplier_id = sup.id;
+
+-- 4.2. Змінно декілька INNER на LEFT та RIGHT 
+USE hw3;
+SELECT COUNT(*) AS total_rows
+FROM order_details od
+LEFT JOIN orders o ON od.order_id = o.id
+RIGHT JOIN products p ON od.product_id = p.id
+LEFT JOIN categories cat ON p.category_id = cat.id
+RIGHT JOIN suppliers sup ON p.supplier_id = sup.id;
+
+--  4.3. employee_id > 3 та ≤ 10
+SELECT *
+FROM order_details od
+INNER JOIN orders o ON od.order_id = o.id
+INNER JOIN employees e ON o.employee_id = e.employee_id
+WHERE e.employee_id > 3 AND e.employee_id <= 10;
+
+-- 4.4. Групування за категорією: COUNT + AVG(quantity)
+SELECT 
+    cat.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(od.quantity) AS avg_quantity
+FROM order_details od
+JOIN products p ON od.product_id = p.id
+JOIN categories cat ON p.category_id = cat.id
+GROUP BY cat.name;
+
+-- 4.5. Фільтрація: середня кількість товару > 21
+SELECT 
+    cat.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(od.quantity) AS avg_quantity
+FROM order_details od
+JOIN products p ON od.product_id = p.id
+JOIN categories cat ON p.category_id = cat.id
+GROUP BY cat.name
+HAVING AVG(od.quantity) > 21;
+
+-- 4.6. Сортування за спаданням кількості рядків
+SELECT 
+    cat.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(od.quantity) AS avg_quantity
+FROM order_details od
+JOIN products p ON od.product_id = p.id
+JOIN categories cat ON p.category_id = cat.id
+GROUP BY cat.name
+ORDER BY row_count DESC;
+
+-- 4.7. Вивести чотири рядки, пропустивши перший
+SELECT od.order_id, AVG(quantity) AS seredna
+FROM order_details AS od
+INNER JOIN orders AS o ON od.order_id = o.id
+INNER JOIN products AS pr ON od.product_id = pr.id
+INNER JOIN customers AS cs ON o.customer_id = cs.id
+WHERE od.product_id > 3
+GROUP BY od.order_id
+HAVING seredna > 10
+ORDER BY od.order_id DESC
+LIMIT 4 OFFSET 1;
